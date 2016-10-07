@@ -342,7 +342,7 @@ func TestBadLinks(t *testing.T) {
 }
 
 type GoodLinksTag struct {
-	Id    int               `jsonapi:"primary,badLinks"`
+	Id    int               `jsonapi:"primary,goodlinks"`
 	Body  string            `jsonapi:"attr,body"`
 	Links map[string]string `jsonapi:"links"`
 }
@@ -351,7 +351,7 @@ func TestGoodLinks(t *testing.T) {
 	good := GoodLinksTag{
 		Id:    10,
 		Body:  "body",
-		Links: map[string]string{"one": "link_1"},
+		Links: map[string]string{"self": "link_1"},
 	}
 
 	data, err := MarshalOne(&good)
@@ -359,7 +359,7 @@ func TestGoodLinks(t *testing.T) {
 		t.Fatalf("Unexpected error: %+v", err)
 	}
 
-	link, ok := data.Data.Links["one"]
+	link, ok := data.Data.Links["self"]
 	if !ok {
 		t.Fatal("Link not found in node")
 	}
@@ -390,5 +390,60 @@ func TestNilPointerOmitEmpty(t *testing.T) {
 	_, ok = data.Data.Attributes["reviewed"]
 	if !ok {
 		t.Fatalf("Expected to find a reviewed property on %+v", c)
+	}
+}
+
+type NodeWithRelationship struct {
+	ID          int               `jsonapi:"primary,main"`
+	Body        string            `jsonapi:"attr,body"`
+	RelatedNode *RelatedNode      `jsonapi:"relation,related"`
+	Links       map[string]string `jsonapi:"links"`
+}
+
+type RelatedNode struct {
+	ID    int               `jsonapi:"primary,related"`
+	Body  string            `jsonapi:"attr,body"`
+	Links map[string]string `jsonapi:"links"`
+}
+
+func TestRelationshipLinks(t *testing.T) {
+	node := NodeWithRelationship{
+		ID:   10,
+		Body: "body",
+		RelatedNode: &RelatedNode{
+			ID:    10,
+			Body:  "body",
+			Links: map[string]string{"self": "link_1"},
+		},
+		Links: map[string]string{"self": "link_1"},
+	}
+
+	data, err := MarshalOne(&node)
+	if err != nil {
+		t.Fatalf("Unexpected error: %+v", err)
+	}
+
+	link, ok := data.Data.Links["self"]
+	if !ok {
+		t.Fatal("Link not found in node")
+	}
+	if link != "link_1" {
+		t.Fatalf("Link value is not correct: %s", link)
+	}
+
+	rl := data.Data.Relationships["related"].(*RelationshipOneNode).Links
+	link, ok = (*rl)["self"]
+	if !ok {
+		t.Fatal("Link not found in node")
+	}
+	if link != "link_1" {
+		t.Fatalf("Link value is not correct: %s", link)
+	}
+	link, ok = (*rl)["related"]
+	if !ok {
+		t.Fatal("Link not found in node")
+	}
+	if link != "link_1" {
+		t.Fatalf("Link value is not correct: %s", link)
 	}
 }

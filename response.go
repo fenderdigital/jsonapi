@@ -301,11 +301,16 @@ func visitModelNode(model interface{}, included *map[string]*Node, sideload bool
 			} else {
 				relationship, err := visitModelNode(fieldValue.Interface(), included, sideload)
 				if err == nil {
+					addRelatedLinkToRelationship(relationship)
+					d := relationship
 					if sideload {
-						appendIncluded(included, relationship)
-						node.Relationships[args[1]] = &RelationshipOneNode{Data: toShallowNode(relationship)}
+						d = toShallowNode(relationship)
+					}
+
+					if relationship.Links != nil {
+						node.Relationships[args[1]] = &RelationshipOneNode{Data: d, Links: &relationship.Links}
 					} else {
-						node.Relationships[args[1]] = &RelationshipOneNode{Data: relationship}
+						node.Relationships[args[1]] = &RelationshipOneNode{Data: d}
 					}
 				} else {
 					er = err
@@ -339,6 +344,12 @@ func visitModelNode(model interface{}, included *map[string]*Node, sideload bool
 	}
 
 	return node, nil
+}
+
+func addRelatedLinkToRelationship(node *Node) {
+	if node.Links != nil && node.Links["self"] != "" {
+		node.Links["related"] = node.Links["self"]
+	}
 }
 
 func toShallowNode(node *Node) *Node {
