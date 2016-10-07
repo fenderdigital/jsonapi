@@ -343,7 +343,7 @@ func visitModelNode(model interface{}, included *map[string]*Node, sideload bool
 }
 
 func addRelatedLinkToRelationship(node *Node) {
-	if node.Links["self"] != "" {
+	if node.Links != nil && node.Links["self"] != "" {
 		node.Links["related"] = node.Links["self"]
 	}
 }

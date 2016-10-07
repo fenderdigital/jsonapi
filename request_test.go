@@ -306,6 +306,23 @@ func samplePayloadWithId() io.Reader {
 	return out
 }
 
+func samplePayloadForTypeGoodLinks() io.Reader {
+	payload := &OnePayload{
+		Data: &Node{
+			Id:   "2",
+			Type: "goodlinks",
+			Attributes: map[string]interface{}{
+				"body": "test",
+			},
+		},
+	}
+
+	out := bytes.NewBuffer(nil)
+	json.NewEncoder(out).Encode(payload)
+
+	return out
+}
+
 func testModel() *Blog {
 	return &Blog{
 		Id:        5,
@@ -392,4 +409,17 @@ func sampleSerializedEmbeddedTestModel() *Blog {
 	UnmarshalPayload(out, blog)
 
 	return blog
+}
+
+func TestUnmarshalWithGoodLinksTag(t *testing.T) {
+	in := samplePayloadForTypeGoodLinks()
+	out := new(GoodLinksTag)
+
+	if err := UnmarshalPayload(in, out); err != nil {
+		t.Fatal(err)
+	}
+
+	if out.Id != 2 {
+		t.Fatalf("Did not set Id on dst interface")
+	}
 }
