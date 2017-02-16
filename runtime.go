@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"io"
+	"reflect"
 	"time"
 )
 
@@ -50,13 +51,22 @@ func (r *Runtime) UnmarshalPayload(reader io.Reader, model interface{}) error {
 	})
 }
 
+func (r *Runtime) UnmarshalManyPayload(reader io.Reader, kind reflect.Type) (elems []interface{}, err error) {
+	r.instrumentCall(UnmarshalStart, UnmarshalStop, func() error {
+		elems, err = UnmarshalManyPayload(reader, kind)
+		return err
+	})
+
+	return
+}
+
 func (r *Runtime) MarshalOnePayload(w io.Writer, model interface{}) error {
 	return r.instrumentCall(MarshalStart, MarshalStop, func() error {
 		return MarshalOnePayload(w, model)
 	})
 }
 
-func (r *Runtime) MarshalManyPayload(w io.Writer, models []interface{}) error {
+func (r *Runtime) MarshalManyPayload(w io.Writer, models interface{}) error {
 	return r.instrumentCall(MarshalStart, MarshalStop, func() error {
 		return MarshalManyPayload(w, models)
 	})
@@ -94,8 +104,7 @@ func (r *Runtime) instrumentCall(start Event, stop Event, c func() error) error 
 // citation: http://play.golang.org/p/4FkNSiUDMg
 func newUUID() (string, error) {
 	uuid := make([]byte, 16)
-	n, err := io.ReadFull(rand.Reader, uuid)
-	if n != len(uuid) || err != nil {
+	if _, err := io.ReadFull(rand.Reader, uuid); err != nil {
 		return "", err
 	}
 	// variant bits; see section 4.1.1
